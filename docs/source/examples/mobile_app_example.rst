@@ -12,11 +12,16 @@ Input models definition
 -----------------------
 
 * Structural model: For the structural model, we will reuse the model defined in our :doc:`Library example<../examples/library_example>`.
-* GUI model: the GUI model to define the GUI elements such as lists, buttons, screens, and view components is presented in the following code.
+* GUI model: the GUI model to define the GUI elements such as lists, buttons, screens, and view components that will interact with our library structural model.
+  The following code demonstrates how we connect these models:
 
 .. code-block:: python
 
   from besser.BUML.metamodel.gui import *
+
+  # The GUI will use the Library structural model classes
+  # to create views and handle data operations
+  from library import * 
    
   # The GUI will use the Library structural model classes
   # to create views and handle data operations
