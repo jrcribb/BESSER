@@ -9,11 +9,11 @@ class Factory:
         for attrib in context.attributes:
             if name == attrib.name:
                 return attrib
-
-    def checkInAssociation(self, name, context):
+    def checkInAssociation(self,name,context):
         for end in context.all_association_ends():
-            if name == end.name:
-                return end
+            # for end in association.ends:
+                if name == end.name:
+                    return end
 
     def handleProp(self,name,iterator):
         if "." in name:
@@ -77,12 +77,12 @@ class Factory:
             if beforeOp is None:
                 oce = OperationCallExpression("Operation", infixOperator.get_infix_operator(),
                                                [leftpart, infixOperator, rightpart])
-                oce.referredOperation(inBetweenOp)
+                oce.referredOperation=inBetweenOp
                 return oce
             else:
                 oce = OperationCallExpression("Operation", infixOperator.get_infix_operator(),
                                               [beforeOp,leftpart, infixOperator, rightpart])
-                oce.referredOperation(inBetweenOp)
+                oce.referredOperation=inBetweenOp
                 return oce
         else:
             return OperationCallExpression(name=name, operation =name,arguments=[] )

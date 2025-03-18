@@ -42,15 +42,16 @@ def parse_buml_content(content: str) -> DomainModel:
             'RDFGenerator': lambda model: type('MockGenerator', (), {'generate': lambda: None})
         }
         
-        # Create a new domain model
-        domain_model = DomainModel("Generated Model")
-        
-        
         # Execute the B-UML content in a safe environment
         local_vars = {}
         exec(content, safe_globals, local_vars)
-        #print("Local variables after execution:", local_vars.keys())
         
+        domain_name = "Imported_Domain_Model"
+        for var_name, var_value in local_vars.items():
+            if isinstance(var_value, DomainModel):
+                domain_name = var_value.name
+
+        domain_model = DomainModel(domain_name)
         # First pass: Add all classes and enumerations
         classes = {}
         for var_name, var_value in local_vars.items():
@@ -60,7 +61,6 @@ def parse_buml_content(content: str) -> DomainModel:
             elif isinstance(var_value, Constraint):
                 domain_model.constraints.add(var_value)
         
-
         # Second pass: Add associations and generalizations
         for var_name, var_value in local_vars.items():
             if isinstance(var_value, BinaryAssociation):
@@ -239,17 +239,22 @@ def domain_model_to_json(domain_model):
             if len(ends) == 2:
                 source_prop, target_prop = ends
                 
-                # Check navigability and swap if needed
-                if not source_prop.is_navigable and target_prop.is_navigable:
-                    # If source is not navigable but target is, keep current order
-                    pass
-                elif source_prop.is_navigable and not target_prop.is_navigable:
-                    # If target is not navigable but source is, swap them
+                # Check navigability and composition, swap if needed
+                if source_prop.is_composite and not target_prop.is_composite:
+                    # If source is composite, swap them to make target composite
                     source_prop, target_prop = target_prop, source_prop
-                elif not source_prop.is_navigable and not target_prop.is_navigable:
-                    # If both are not navigable, raise error but continue
-                    print(f"Warning: Both ends of association {name} are not navigable. Skipping this association.")
-                    continue
+                elif not source_prop.is_composite and not target_prop.is_composite:
+                    # Check navigability only if neither end is composite
+                    if not source_prop.is_navigable and target_prop.is_navigable:
+                        # If source is not navigable but target is, keep current order
+                        pass
+                    elif source_prop.is_navigable and not target_prop.is_navigable:
+                        # If target is not navigable but source is, swap them
+                        source_prop, target_prop = target_prop, source_prop
+                    elif not source_prop.is_navigable and not target_prop.is_navigable:
+                        # If both are not navigable, raise error but continue
+                        print(f"Warning: Both ends of association {name} are not navigable. Skipping this association.")
+                        continue
                 
                 source_class = source_prop.type
                 target_class = target_prop.type
@@ -275,7 +280,7 @@ def domain_model_to_json(domain_model):
                     rel_bounds = calculate_relationship_bounds(path_points)
                     
                     # Determine relationship type
-                    rel_type = RELATIONSHIP_TYPES["composition"] if source_prop.is_composite else (
+                    rel_type = RELATIONSHIP_TYPES["composition"] if target_prop.is_composite else (
                         RELATIONSHIP_TYPES["bidirectional"] if source_prop.is_navigable and target_prop.is_navigable
                         else RELATIONSHIP_TYPES["unidirectional"]
                     )
